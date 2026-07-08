@@ -26,7 +26,14 @@ qc_report <- function(dirs, output_file, ids = NULL,
   if (!nzchar(template)) {
     stop("Report template not found in the installed package.", call. = FALSE)
   }
-  output_file <- normalizePath(output_file, mustWork = FALSE)
+  # Make the output path absolute even if the file does not exist yet:
+  # rmarkdown::render interprets a relative output_file relative to the
+  # template's directory, so a bare filename would be written next to the
+  # template instead of the caller's working directory.
+  output_file <- file.path(
+    normalizePath(dirname(output_file), mustWork = FALSE),
+    basename(output_file)
+  )
   # Rendering runs in the template's directory, so resolve run paths to
   # absolute first or relative `dirs` will not be found.
   dirs <- normalizePath(dirs, mustWork = TRUE)
