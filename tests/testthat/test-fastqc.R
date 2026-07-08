@@ -69,3 +69,28 @@ test_that("parse_fastqc returns NULL when nothing is found", {
   dir.create(empty)
   expect_null(parse_fastqc(empty))
 })
+
+test_that("fastqc_status rolls modules up to one status per reaction", {
+  fr <- fastqc_by_reaction(fqc_dir(), gm_dir(), ids = "gm")
+  fs <- fastqc_status(fr)
+  expect_equal(fs$run_id, "gm")
+  # GEX0 fixtures are FAIL on 'Overrepresented sequences' (a default module).
+  expect_equal(fs$fastqc_status, "fail")
+  expect_equal(fs$n_fastqc_fail, 2)
+})
+
+test_that("fastqc_status honours the module allow-list", {
+  fr <- fastqc_by_reaction(fqc_dir(), gm_dir(), ids = "gm")
+  # 'Per base sequence quality' is PASS for GEX0, WARN for SP0 -> warn.
+  fs <- fastqc_status(fr, modules = "Per base sequence quality")
+  expect_equal(fs$fastqc_status, "warn")
+  # A module absent from the fixtures -> no rows.
+  expect_equal(nrow(fastqc_status(fr, modules = "Adapter Content")), 0)
+})
+
+test_that("worst_status returns the most severe non-NA status", {
+  expect_equal(worst_status("pass", "warn"), "warn")
+  expect_equal(worst_status("fail", "pass"), "fail")
+  expect_equal(worst_status(NA, "pass"), "pass")
+  expect_true(is.na(worst_status(NA, NA)))
+})

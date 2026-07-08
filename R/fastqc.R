@@ -145,6 +145,67 @@ parse_fastqc <- function(dirs) {
   list(stats = stats, modules = modules)
 }
 
+#' FastQC modules that count toward the QC roll-up
+#'
+#' A curated subset of FastQC modules whose failure genuinely indicates a
+#' problematic library. Several FastQC modules routinely WARN/FAIL for 10x
+#' single-cell fastqs by design (e.g. per-base sequence content and duplication
+#' levels), so they are excluded by default to avoid over-flagging. Pass your
+#' own vector to [fastqc_status()] / [qc_report()] to change this.
+#'
+#' @return A character vector of FastQC module names.
+#' @export
+#' @examples
+#' default_fastqc_modules()
+default_fastqc_modules <- function() {
+  c("Per base sequence quality",
+    "Per sequence quality scores",
+    "Per base N content",
+    "Adapter Content",
+    "Overrepresented sequences")
+}
+
+#' Roll FastQC module statuses up to one status per reaction
+#'
+#' Considers only the modules in `modules`, maps FastQC PASS/WARN/FAIL to
+#' pass/warn/fail, and takes the worst across all of a reaction's fastq files.
+#'
+#' @param fqc Output of [fastqc_by_reaction()].
+#' @param modules FastQC modules to consider; see [default_fastqc_modules()].
+#'
+#' @return A tibble with `run_id`, `n_fastqc_warn`, `n_fastqc_fail` and
+#'   `fastqc_status`. Files not attributed to a run (`run_id` `NA`) are ignored.
+#' @export
+fastqc_status <- function(fqc, modules = default_fastqc_modules()) {
+  empty <- tibble::tibble(
+    run_id = character(0), n_fastqc_warn = integer(0),
+    n_fastqc_fail = integer(0), fastqc_status = character(0)
+  )
+  if (is.null(fqc) || is.null(fqc$modules)) return(empty)
+  fm <- fqc$modules
+  fm <- fm[!is.na(fm$run_id) & fm$module %in% modules, , drop = FALSE]
+  if (nrow(fm) == 0) return(empty)
+  dplyr::summarise(
+    dplyr::group_by(fm, .data$run_id),
+    n_fastqc_warn = sum(.data$status == "WARN"),
+    n_fastqc_fail = sum(.data$status == "FAIL"),
+    fastqc_status = if (any(.data$status == "FAIL")) "fail"
+                    else if (any(.data$status == "WARN")) "warn" else "pass",
+    .groups = "drop"
+  )
+}
+
+#' Worst of a set of pass/warn/fail statuses (NA ignored)
+#' @keywords internal
+#' @noRd
+worst_status <- function(...) {
+  vals <- c(...)
+  vals <- vals[!is.na(vals)]
+  if (length(vals) == 0) return(NA_character_)
+  rank <- c(pass = 1L, warn = 2L, fail = 3L)
+  names(rank)[max(rank[vals])]
+}
+
 #' Attribute a fastq filename to a declared fastq_id
 #' @keywords internal
 #' @noRd

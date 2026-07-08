@@ -64,6 +64,7 @@ qc_report <- function(dirs, output_file, ids = NULL,
   wide <- metrics_wide(long)
   flags <- flag_qc(long, thresholds)
   status <- qc_status(flags)
+  status$overall <- status$qc_status  # updated below if FastQC is included
 
   # ---- h5-derived metrics (the slow part) ----
   br_df <- NULL
@@ -97,7 +98,15 @@ qc_report <- function(dirs, output_file, ids = NULL,
                     error = function(e) {
                       warning(conditionMessage(e), call. = FALSE); NULL
                     })
-    if (is.null(fqc)) step("  no FastQC outputs found")
+    if (is.null(fqc)) {
+      step("  no FastQC outputs found")
+    } else {
+      # Fold the FastQC roll-up into the overall per-reaction status.
+      fqs <- fastqc_status(fqc)
+      status <- dplyr::left_join(status, fqs, by = "run_id")
+      status$overall <- mapply(worst_status, status$qc_status,
+                               status$fastqc_status, USE.NAMES = FALSE)
+    }
   }
 
   step("Rendering HTML")

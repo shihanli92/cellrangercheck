@@ -31,7 +31,12 @@ DT::datatable(meta, rownames = FALSE, options = list(dom = "t"))
 # Overall QC status
 
 ```{r status}
-DT::datatable(status, rownames = FALSE, options = list(dom = "t"))
+cap <- if ("fastqc_status" %in% names(status)) {
+  "overall = worst of the Cell Ranger metric status and the FastQC status"
+} else {
+  "overall = Cell Ranger metric status"
+}
+DT::datatable(status, rownames = FALSE, caption = cap, options = list(dom = "t"))
 ```
 
 # Comparable per-sample metrics

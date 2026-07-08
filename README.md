@@ -92,6 +92,17 @@ prefix, e.g. `GEX0`) to its GEM reaction, and FastQC outputs are named by that
 prefix. Both zipped (`*_fastqc.zip`) and already-extracted (`*_fastqc/`) outputs
 are discovered recursively.
 
+The FastQC result also feeds the **overall** per-reaction status: the report's
+status table gains an `overall` column = worst of the Cell Ranger metric status
+and the FastQC status. Only a curated set of diagnostic modules counts toward
+this (several FastQC modules routinely fail for 10x fastqs by design), so it
+doesn't over-flag. Inspect or customise that set:
+
+```r
+default_fastqc_modules()                          # modules that count
+fastqc_status(fastqc_by_reaction("path/to/fastqc", runs))   # per-reaction roll-up
+```
+
 You can also use the FastQC layer directly:
 
 ```r
