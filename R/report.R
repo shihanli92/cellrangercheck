@@ -60,11 +60,22 @@ qc_report <- function(dirs, output_file, ids = NULL,
   long <- dplyr::bind_rows(long_list)
   meta <- dplyr::bind_rows(meta_list)
 
+  # ---- h5-derived metrics folded into the tidy table (the slow part) ----
+  if (isTRUE(include_h5)) {
+    step("Computing derived metrics (mito, ambient, pass-rate, ...)")
+    derived <- tryCatch(derived_metrics(dirs, ids = run_ids),
+                        error = function(e) {
+                          warning(conditionMessage(e), call. = FALSE); NULL
+                        })
+    if (!is.null(derived)) long <- dplyr::bind_rows(long, derived)
+  }
+
   step("Flagging metrics against thresholds")
   wide <- metrics_wide(long)
   flags <- flag_qc(long, thresholds)
   status <- qc_status(flags)
   status$overall <- status$qc_status  # updated below if FastQC is included
+  outliers <- flag_outliers(wide)
 
   # ---- h5-derived metrics (the slow part) ----
   br_df <- NULL
@@ -117,7 +128,7 @@ qc_report <- function(dirs, output_file, ids = NULL,
       precomputed = list(
         long = long, meta = meta, wide = wide,
         flags = flags, status = status, br = br_df, dist = dist,
-        fqc = fqc, mdat = assay_metric_data(long)
+        fqc = fqc, mdat = assay_metric_data(long), outliers = outliers
       ),
       include_h5 = include_h5
     ),

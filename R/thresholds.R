@@ -27,6 +27,9 @@ default_thresholds <- function() {
     "Antibody Capture", "Library", "Physical library ID", "Valid barcodes",                      "min",      90,     75,
     "Antibody Capture", "Library", "Physical library ID", "Fraction antibody reads usable",      "min",      20,     10,
     "VDJ T",            "Cells",   NA,                    "Cells With Productive V-J Spanning Pair", "min",  30,     10,
-    "VDJ T",            "Cells",   NA,                    "Fraction Reads in Cells",             "min",      50,     30
+    "VDJ T",            "Cells",   NA,                    "Fraction Reads in Cells",             "min",      50,     30,
+    "Gene Expression",  "Derived", NA,                    "Median % mitochondrial",              "max",      10,     20,
+    "Gene Expression",  "Derived", NA,                    "% cells passing filter",              "min",      70,     50,
+    "Gene Expression",  "Derived", NA,                    "% ambient RNA",                       "max",      20,     40
   )
 }

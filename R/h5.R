@@ -61,7 +61,8 @@ read_h5_run_attrs <- function(path) {
 #'
 #' @param path Path to a `*_feature_bc_matrix.h5` file.
 #' @return A list with `mat` (a features x barcodes `Matrix::dgCMatrix`),
-#'   `features` (a tibble of `id`, `name`, `feature_type`) and `barcodes`.
+#'   `features` (a tibble of `id`, `name`, `feature_type`, `genome`) and
+#'   `barcodes`.
 #' @keywords internal
 #' @noRd
 read_10x_h5 <- function(path) {
@@ -80,6 +81,12 @@ read_10x_h5 <- function(path) {
   feature_type <- as.character(ft[["feature_type"]]$read())
   feature_name <- as.character(ft[["name"]]$read())
   feature_id <- as.character(ft[["id"]]$read())
+  # `genome` is present for gene-expression references but may be absent.
+  genome <- if ("genome" %in% names(ft)) {
+    as.character(ft[["genome"]]$read())
+  } else {
+    rep(NA_character_, length(feature_id))
+  }
 
   mat <- Matrix::sparseMatrix(
     i = as.numeric(indices) + 1,
@@ -94,7 +101,8 @@ read_10x_h5 <- function(path) {
     features = tibble::tibble(
       id = feature_id,
       name = feature_name,
-      feature_type = feature_type
+      feature_type = feature_type,
+      genome = genome
     ),
     barcodes = barcodes
   )
@@ -130,4 +138,36 @@ read_cr_matrix <- function(dir, feature_type = NULL, sample_id = NULL,
     return(parsed$mat[keep, , drop = FALSE])
   }
   parsed$mat
+}
+
+#' Read a Cell Ranger matrix together with its feature metadata
+#'
+#' Like [read_cr_matrix()] but keeps the feature tibble (needed for
+#' gene-symbol matching, e.g. mitochondrial/ribosomal fractions).
+#'
+#' @inheritParams read_cr_matrix
+#' @return A list with `mat` (features x barcodes) and `features` (a tibble of
+#'   `id`, `name`, `feature_type`, `genome`), both subset to `feature_type`.
+#' @keywords internal
+#' @noRd
+read_cr_matrix_features <- function(dir, feature_type = NULL, sample_id = NULL,
+                                    which = c("filtered", "raw")) {
+  which <- match.arg(which)
+  info <- detect_pipeline(dir)
+  path <- find_matrix_h5(info, which = which, sample_id = sample_id)
+  if (is.na(path)) {
+    stop("No ", which, " feature-barcode .h5 found for run '", dir, "'.",
+         call. = FALSE)
+  }
+  parsed <- read_10x_h5(path)
+  if (!is.null(feature_type)) {
+    keep <- parsed$features$feature_type %in% feature_type
+    if (!any(keep)) {
+      stop("No features of type '", paste(feature_type, collapse = ", "),
+           "' in matrix.", call. = FALSE)
+    }
+    parsed$mat <- parsed$mat[keep, , drop = FALSE]
+    parsed$features <- parsed$features[keep, , drop = FALSE]
+  }
+  list(mat = parsed$mat, features = parsed$features)
 }

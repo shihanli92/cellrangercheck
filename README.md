@@ -55,6 +55,12 @@ barcode_ranks(runs[1])                  # barcode-rank curve + knee/inflection
 umi_gene_distribution(runs)             # per-cell UMI & gene summaries
 read_cr_matrix(runs[1], feature_type = "Gene Expression")  # sparse matrix
 
+# 5b. Extra derived QC (mito %, ribo %, complexity, usable-cell rate, ambient)
+cell_qc(runs)                           # per-well mito/ribo/complexity + pass-rate
+ambient_fraction(runs)                  # background RNA fraction per well
+derived_metrics(runs)                   # the above as tidy long rows (category "Derived")
+flag_outliers(metrics_wide(long))       # cross-well MAD outliers (needs >= 3 wells)
+
 # 6. Full side-by-side HTML report (timed progress printed as it builds)
 qc_report(runs, "qc_report.html")
 # qc_report(runs, "qc_report.html", progress = TRUE)   # force progress off-interactive
@@ -125,6 +131,26 @@ fastqc_by_reaction("path/to/fastqc", runs)        # adds run_id, fastq_id, featu
 # See the fastq_id -> reaction map from the configs
 library_map(runs)
 ```
+
+## Derived metrics (beyond Cell Ranger's summary)
+
+When `include_h5 = TRUE` (the default), `qc_report()` computes extra QC signals
+from the filtered/raw matrices and folds them into the comparable table, metric
+explorer and flag heatmap alongside Cell Ranger's own metrics:
+
+- **Mitochondrial %** and **ribosomal %** — genome-aware, matched on gene symbol
+  (`mt-`/`MT-`, `Rps`/`RPS` …), so mouse and human both work out of the box.
+- **Cell-quality pass-rate** — % of called cells with `genes >= 200` and
+  `%mito <= 20` (tune via `cell_qc(min_genes=, max_pct_mito=)`): the *usable*
+  cells, not just the called ones.
+- **Library complexity** — median `log10(genes)/log10(UMI)`.
+- **Ambient RNA fraction** — background UMIs (empty droplets) / total, per well.
+- **Expected multiplet rate** — from recovered cell count (10x heuristic).
+- **Cross-well outliers** — MAD-based flags highlighting the deviating well
+  (`flag_outliers()`; needs at least 3 wells).
+
+Default thresholds flag `Median % mitochondrial` (>10/20% warn/fail),
+`% cells passing filter` (<70/50% warn/fail) and `% ambient RNA` (>20/40%).
 
 ## Customising thresholds
 

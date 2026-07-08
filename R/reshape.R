@@ -19,7 +19,7 @@
 #' \dontrun{
 #' metrics_wide(parse_cellranger_runs(c("sample0", "sample1")))
 #' }
-metrics_wide <- function(long, category = "Cells") {
+metrics_wide <- function(long, category = c("Cells", "Derived")) {
   keep <- long$category %in% category | is.na(long$category)
   sub <- long[keep, , drop = FALSE]
   # Library-level rows are keyed by group; for the per-sample comparison we

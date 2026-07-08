@@ -33,10 +33,12 @@ write_10x_h5 <- function(path, mat, feature_id, feature_name, feature_type,
 
 set.seed(1)  # deterministic
 
-# Features: 4 gene-expression + 2 antibody.
-feature_id <- c("ENSG1", "ENSG2", "ENSG3", "ENSG4", "AB1", "AB2")
-feature_name <- c("GeneA", "GeneB", "GeneC", "GeneD", "HTO1", "HTO2")
-feature_type <- c(rep("Gene Expression", 4), rep("Antibody Capture", 2))
+# Features: 8 gene-expression (incl. 2 mito + 2 ribo) + 2 antibody.
+feature_id <- c("ENSG1", "ENSG2", "ENSG3", "ENSG4",
+                "ENSMT1", "ENSMT2", "ENSRP1", "ENSRP2", "AB1", "AB2")
+feature_name <- c("GeneA", "GeneB", "GeneC", "GeneD",
+                  "mt-Nd1", "mt-Co1", "Rps2", "Rpl3", "HTO1", "HTO2")
+feature_type <- c(rep("Gene Expression", 8), rep("Antibody Capture", 2))
 
 # ---- filtered matrix: 5 clear cells ----
 n_cells <- 5

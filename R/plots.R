@@ -11,13 +11,14 @@
 #' @export
 assay_metric_data <- function(long) {
   keep <-
-    long$category %in% "Cells" |
+    long$category %in% c("Cells", "Derived") |
     (long$category %in% "Library" & long$grouped_by %in% "Physical library ID") |
     is.na(long$category)
   d <- long[keep & !is.na(long$value), , drop = FALSE]
 
   tag <- ifelse(is.na(d$category), "",
-                ifelse(d$category == "Cells", " [cell]", " [seq]"))
+                ifelse(d$category == "Cells", " [cell]",
+                       ifelse(d$category == "Derived", " [derived]", " [seq]")))
   d$metric_label <- paste0(d$metric, tag)
   d$library <- ifelse(
     is.na(d$sample_id) | d$run_id == d$sample_id,

@@ -81,22 +81,21 @@ umi_gene_distribution <- function(dirs, ids = NULL, feature_type = "Gene Express
     info <- detect_pipeline(d)
     run_id <- if (is.na(i)) run_id_from_dir(d) else i
     purrr::map_dfr(info$samples$sample_id, function(sid) {
-      mat <- read_cr_matrix(d, feature_type = feature_type, sample_id = sid,
-                            which = "filtered")
-      umi <- Matrix::colSums(mat)
-      genes <- Matrix::colSums(mat > 0)
+      parsed <- read_cr_matrix_features(d, feature_type = feature_type,
+                                        sample_id = sid, which = "filtered")
+      pc <- per_cell_qc(parsed$mat, parsed$features)
       tibble::tibble(
         run_id = run_id,
         sample_id = sid,
-        n_cells = ncol(mat),
-        median_umi = stats::median(umi),
-        mad_umi = stats::mad(umi),
-        q25_umi = stats::quantile(umi, 0.25, names = FALSE),
-        q75_umi = stats::quantile(umi, 0.75, names = FALSE),
-        median_genes = stats::median(genes),
-        mad_genes = stats::mad(genes),
-        q25_genes = stats::quantile(genes, 0.25, names = FALSE),
-        q75_genes = stats::quantile(genes, 0.75, names = FALSE)
+        n_cells = nrow(pc),
+        median_umi = stats::median(pc$umi),
+        mad_umi = stats::mad(pc$umi),
+        q25_umi = stats::quantile(pc$umi, 0.25, names = FALSE),
+        q75_umi = stats::quantile(pc$umi, 0.75, names = FALSE),
+        median_genes = stats::median(pc$genes),
+        mad_genes = stats::mad(pc$genes),
+        q25_genes = stats::quantile(pc$genes, 0.25, names = FALSE),
+        q75_genes = stats::quantile(pc$genes, 0.75, names = FALSE)
       )
     })
   })

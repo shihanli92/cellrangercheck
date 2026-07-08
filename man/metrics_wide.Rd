@@ -4,7 +4,7 @@
 \alias{metrics_wide}
 \title{Pivot the tidy metrics table to one comparable row per sample}
 \usage{
-metrics_wide(long, category = "Cells")
+metrics_wide(long, category = c("Cells", "Derived"))
 }
 \arguments{
 \item{long}{A tidy tibble from \code{\link[=parse_cellranger]{parse_cellranger()}} /

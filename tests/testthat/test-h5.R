@@ -4,12 +4,12 @@ test_that("read_cr_matrix returns a sparse features x barcodes matrix", {
   m <- read_cr_matrix(multi_dir())
   expect_s4_class(m, "dgCMatrix")
   expect_equal(ncol(m), 5)      # 5 cells in the filtered fixture
-  expect_equal(nrow(m), 6)      # 4 GEX + 2 antibody features
+  expect_equal(nrow(m), 10)     # 8 GEX (incl. mito/ribo) + 2 antibody
 })
 
 test_that("feature_type subsets the matrix rows", {
   gex <- read_cr_matrix(multi_dir(), feature_type = "Gene Expression")
-  expect_equal(nrow(gex), 4)
+  expect_equal(nrow(gex), 8)
   ab <- read_cr_matrix(multi_dir(), feature_type = "Antibody Capture")
   expect_equal(nrow(ab), 2)
 })

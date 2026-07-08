@@ -16,7 +16,7 @@ library(cellrangercheck)
 pc <- params$precomputed
 long <- pc$long; meta <- pc$meta; wide <- pc$wide
 flags <- pc$flags; status <- pc$status; br <- pc$br; dist <- pc$dist
-fqc <- pc$fqc; mdat <- pc$mdat
+fqc <- pc$fqc; mdat <- pc$mdat; outliers <- pc$outliers
 ```
 
 # Run overview
@@ -44,6 +44,26 @@ DT::datatable(status, rownames = FALSE, caption = cap, options = list(dom = "t")
 ```{r wide}
 DT::datatable(wide, rownames = FALSE,
               options = list(scrollX = TRUE, pageLength = 25))
+```
+
+# Cross-well outliers
+
+```{r outliers}
+n_wells <- length(unique(paste(status$run_id, status$sample_id)))
+if (n_wells < 3) {
+  cat("Needs at least 3 GEM wells to flag robust (MAD-based) outliers;",
+      n_wells, "provided.")
+} else if (is.null(outliers) || nrow(outliers) == 0) {
+  cat("No metrics deviate by more than 3 MADs across wells.")
+} else {
+  show <- outliers[, c("run_id", "sample_id", "metric", "value",
+                       "median", "mad", "n_mads")]
+  show[c("value", "median", "mad", "n_mads")] <-
+    lapply(show[c("value", "median", "mad", "n_mads")], round, 2)
+  DT::datatable(show, rownames = FALSE,
+                caption = "Values > 3 MADs from the cross-well median",
+                options = list(scrollX = TRUE, pageLength = 15))
+}
 ```
 
 # Metric explorer {.tabset}
