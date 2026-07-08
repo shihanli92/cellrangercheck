@@ -1,0 +1,11 @@
+[gene-expression]
+reference,/path/to/refdata-gex-GRCh38-2020-A
+create-bam,true
+
+[feature]
+reference,/path/to/feature_reference.csv
+
+[libraries]
+fastq_id,fastqs,feature_types
+GEX0,/path/to/fastqs/gex,Gene Expression
+SP0,/path/to/fastqs/adt,Antibody Capture

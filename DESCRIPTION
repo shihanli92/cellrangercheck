@@ -1,0 +1,34 @@
+Package: cellrangercheck
+Title: Parse and QC Cell Ranger count/multi Outputs Across GEM Wells
+Version: 0.1.0
+Authors@R:
+    person("Shihan", "Li", email = "shihanli1992@gmail.com", role = c("aut", "cre"))
+Description: Point the package at a set of Cell Ranger run directories (each a
+    separate GEM reaction) and parse 'cellranger count' and 'cellranger multi'
+    outputs into one tidy, comparable table of pipeline quality-control metrics.
+    Reads metrics_summary.csv (wide count and long multi formats), reads the
+    filtered/raw feature-barcode HDF5 matrices to derive barcode-rank knee
+    points and per-cell UMI/gene distributions, flags wells against configurable
+    thresholds, and renders a side-by-side HTML report.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.1)
+Imports:
+    dplyr,
+    hdf5r,
+    Matrix,
+    purrr,
+    readr,
+    rlang,
+    tibble,
+    tidyr
+Suggests:
+    DT,
+    ggplot2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
