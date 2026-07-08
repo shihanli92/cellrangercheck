@@ -6,31 +6,21 @@ output:
     toc_float: true
     df_print: paged
 params:
-  dirs: !r list()
-  ids: !r NULL
-  thresholds: !r NULL
+  precomputed: !r NULL
   include_h5: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(cellrangercheck)
-dirs <- unlist(params$dirs)
-ids <- if (is.null(params$ids)) NULL else unlist(params$ids)
-thresholds <- if (is.null(params$thresholds)) default_thresholds() else params$thresholds
-```
-
-```{r parse}
-long <- parse_cellranger_runs(dirs, ids = ids)
-meta <- do.call(rbind, lapply(dirs, run_metadata))
-wide <- metrics_wide(long)
-flags <- flag_qc(long, thresholds)
-status <- qc_status(flags)
+pc <- params$precomputed
+long <- pc$long; meta <- pc$meta; wide <- pc$wide
+flags <- pc$flags; status <- pc$status; br <- pc$br; dist <- pc$dist
 ```
 
 # Run overview
 
-Number of GEM wells: **`r length(dirs)`**. Pipelines:
+Number of GEM wells: **`r nrow(meta)`**. Pipelines:
 `r paste(sort(unique(long$pipeline)), collapse = ", ")`.
 
 ```{r meta}
@@ -75,35 +65,20 @@ DT::datatable(flags, rownames = FALSE, options = list(scrollX = TRUE))
 # Barcode-rank curves
 
 ```{r barcode_ranks, fig.width=7, fig.height=4}
-if (isTRUE(params$include_h5)) {
-  br <- lapply(seq_along(dirs), function(i) {
-    out <- tryCatch(barcode_ranks(dirs[i]), error = function(e) NULL)
-    if (is.null(out)) return(NULL)
-    df <- out$ranks
-    df$run_id <- if (is.null(ids)) basename(dirs[i]) else ids[i]
-    df$knee <- out$knee
-    df
-  })
-  br <- do.call(rbind, Filter(Negate(is.null), br))
-  if (!is.null(br) && nrow(br)) {
-    ggplot(br, aes(rank, total_umi, color = run_id)) +
-      geom_line() +
-      geom_hline(aes(yintercept = knee, color = run_id), linetype = "dashed") +
-      scale_x_log10() + scale_y_log10() +
-      labs(x = "Barcode rank", y = "Total UMI", color = "GEM well") +
-      theme_minimal()
-  }
+if (isTRUE(params$include_h5) && !is.null(br) && nrow(br)) {
+  ggplot(br, aes(rank, total_umi, color = run_id)) +
+    geom_line() +
+    geom_hline(aes(yintercept = knee, color = run_id), linetype = "dashed") +
+    scale_x_log10() + scale_y_log10() +
+    labs(x = "Barcode rank", y = "Total UMI", color = "GEM well") +
+    theme_minimal()
 }
 ```
 
 # Per-cell UMI / gene distributions
 
 ```{r umi_gene}
-if (isTRUE(params$include_h5)) {
-  dist <- tryCatch(umi_gene_distribution(dirs, ids = ids),
-                   error = function(e) NULL)
-  if (!is.null(dist)) {
-    DT::datatable(dist, rownames = FALSE, options = list(scrollX = TRUE, dom = "t"))
-  }
+if (isTRUE(params$include_h5) && !is.null(dist)) {
+  DT::datatable(dist, rownames = FALSE, options = list(scrollX = TRUE, dom = "t"))
 }
 ```

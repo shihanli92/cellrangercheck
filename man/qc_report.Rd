@@ -9,7 +9,8 @@ qc_report(
   output_file,
   ids = NULL,
   thresholds = default_thresholds(),
-  include_h5 = TRUE
+  include_h5 = TRUE,
+  progress = interactive()
 )
 }
 \arguments{
@@ -23,6 +24,9 @@ qc_report(
 
 \item{include_h5}{Whether to compute h5-derived metrics (barcode-rank knee,
 UMI/gene distributions). Set \code{FALSE} to skip if matrices are absent.}
+
+\item{progress}{Whether to print timed progress messages while building the
+report. Defaults to \code{TRUE} in interactive sessions.}
 }
 \value{
 The path to the rendered report, invisibly.
@@ -31,4 +35,8 @@ The path to the rendered report, invisibly.
 Parses each run, flags metrics, and renders an HTML report comparing all GEM
 reactions. Requires the suggested packages \code{rmarkdown}, \code{knitr}, \code{ggplot2}
 and \code{DT}.
+}
+\details{
+The metrics (including the slower h5 reads) are computed up front so progress
+can be reported; the Rmd template only renders the precomputed results.
 }

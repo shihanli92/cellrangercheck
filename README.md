@@ -55,9 +55,25 @@ barcode_ranks(runs[1])                  # barcode-rank curve + knee/inflection
 umi_gene_distribution(runs)             # per-cell UMI & gene summaries
 read_cr_matrix(runs[1], feature_type = "Gene Expression")  # sparse matrix
 
-# 6. Full side-by-side HTML report
+# 6. Full side-by-side HTML report (timed progress printed as it builds)
 qc_report(runs, "qc_report.html")
+# qc_report(runs, "qc_report.html", progress = TRUE)   # force progress off-interactive
 ```
+
+`qc_report()` prints timed, per-run progress while it works, e.g.:
+
+```
+[   0.0s] Parsing 2 runs
+[   0.0s]   (1/2) sample0: metrics + metadata
+[   0.3s] Flagging metrics against thresholds
+[   0.3s]   (1/2) sample0: barcode-rank knee
+[   5.5s] Per-cell UMI / gene distributions
+[   6.2s] Rendering HTML
+[   7.4s] Done -> qc_report.html
+```
+
+Progress defaults to on in interactive sessions; set `progress = FALSE` to
+silence it or `progress = TRUE` to force it (e.g. in scripts/logs).
 
 ## Customising thresholds
 
