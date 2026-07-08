@@ -13,6 +13,10 @@
 #' @param thresholds Threshold tibble; see [default_thresholds()].
 #' @param include_h5 Whether to compute h5-derived metrics (barcode-rank knee,
 #'   UMI/gene distributions). Set `FALSE` to skip if matrices are absent.
+#' @param fastqc Optional character vector of directories to scan for FastQC
+#'   outputs. When supplied, a FastQC section (per-module PASS/WARN/FAIL grid and
+#'   basic statistics, grouped by reaction) is appended. FastQC files are matched
+#'   to reactions via each run's `config.csv` fastq prefixes.
 #' @param progress Whether to print timed progress messages while building the
 #'   report. Defaults to `TRUE` in interactive sessions.
 #'
@@ -20,7 +24,7 @@
 #' @export
 qc_report <- function(dirs, output_file, ids = NULL,
                       thresholds = default_thresholds(), include_h5 = TRUE,
-                      progress = interactive()) {
+                      fastqc = NULL, progress = interactive()) {
   rlang::check_installed(c("rmarkdown", "knitr", "ggplot2", "DT"))
   template <- system.file("rmd", "report.Rmd", package = "cellrangercheck")
   if (!nzchar(template)) {
@@ -85,6 +89,17 @@ qc_report <- function(dirs, output_file, ids = NULL,
                      error = function(e) NULL)
   }
 
+  # ---- optional FastQC section ----
+  fqc <- NULL
+  if (!is.null(fastqc)) {
+    step("Scanning + parsing FastQC outputs")
+    fqc <- tryCatch(fastqc_by_reaction(fastqc, dirs, ids = run_ids),
+                    error = function(e) {
+                      warning(conditionMessage(e), call. = FALSE); NULL
+                    })
+    if (is.null(fqc)) step("  no FastQC outputs found")
+  }
+
   step("Rendering HTML")
   rmarkdown::render(
     template,
@@ -92,7 +107,8 @@ qc_report <- function(dirs, output_file, ids = NULL,
     params = list(
       precomputed = list(
         long = long, meta = meta, wide = wide,
-        flags = flags, status = status, br = br_df, dist = dist
+        flags = flags, status = status, br = br_df, dist = dist,
+        fqc = fqc
       ),
       include_h5 = include_h5
     ),

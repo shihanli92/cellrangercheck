@@ -16,6 +16,7 @@ library(cellrangercheck)
 pc <- params$precomputed
 long <- pc$long; meta <- pc$meta; wide <- pc$wide
 flags <- pc$flags; status <- pc$status; br <- pc$br; dist <- pc$dist
+fqc <- pc$fqc
 ```
 
 # Run overview
@@ -80,5 +81,36 @@ if (isTRUE(params$include_h5) && !is.null(br) && nrow(br)) {
 ```{r umi_gene}
 if (isTRUE(params$include_h5) && !is.null(dist)) {
   DT::datatable(dist, rownames = FALSE, options = list(scrollX = TRUE, dom = "t"))
+}
+```
+
+```{r fastqc_section, results='asis', eval=!is.null(fqc)}
+cat("# FastQC\n")
+```
+
+```{r fastqc_stats, eval=!is.null(fqc)}
+fs <- fqc$stats
+fs <- fs[order(fs$run_id, fs$fastq_id, fs$read), ]
+show <- fs[, c("run_id", "fastq_id", "feature_types", "read", "filename",
+               "total_sequences", "read_length", "pct_gc", "pct_dup")]
+DT::datatable(show, rownames = FALSE, caption = "Basic statistics per fastq file",
+              options = list(scrollX = TRUE, pageLength = 25))
+```
+
+```{r fastqc_modules, fig.width=9, fig.height=5, eval=!is.null(fqc)}
+fm <- fqc$modules
+if (!is.null(fm) && nrow(fm)) {
+  fm$file_lab <- paste(ifelse(is.na(fm$run_id), "?", fm$run_id),
+                       fm$fastq_id, fm$read, sep = " | ")
+  fm$module <- factor(fm$module, levels = rev(unique(fm$module)))
+  fm$status <- factor(fm$status, levels = c("PASS", "WARN", "FAIL"))
+  ggplot(fm, aes(x = file_lab, y = module, fill = status)) +
+    geom_tile(color = "white") +
+    scale_fill_manual(values = c(PASS = "#2c7fb8", WARN = "#fec44f",
+                                 FAIL = "#de2d26"), na.value = "grey85") +
+    labs(x = NULL, y = NULL, fill = "FastQC",
+         title = "FastQC module status by reaction | library | read") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 ```

@@ -75,6 +75,36 @@ qc_report(runs, "qc_report.html")
 Progress defaults to on in interactive sessions; set `progress = FALSE` to
 silence it or `progress = TRUE` to force it (e.g. in scripts/logs).
 
+## Adding FastQC
+
+If you have FastQC outputs for the raw fastqs, point `qc_report()` at the
+directory(ies) holding them and a FastQC section is appended — a per-module
+PASS/WARN/FAIL grid plus basic statistics (total sequences, %GC, %dup, read
+length), grouped by reaction:
+
+```r
+qc_report(runs, "qc_report.html", fastqc = "path/to/fastqc")
+```
+
+FastQC files are matched to reactions automatically via each run's
+`outs/config.csv`: the `[libraries]` section maps every `fastq_id` (the fastq
+prefix, e.g. `GEX0`) to its GEM reaction, and FastQC outputs are named by that
+prefix. Both zipped (`*_fastqc.zip`) and already-extracted (`*_fastqc/`) outputs
+are discovered recursively.
+
+You can also use the FastQC layer directly:
+
+```r
+# Just parse FastQC (no reaction mapping)
+parse_fastqc("path/to/fastqc")                    # $stats and $modules
+
+# Parse and attribute each file to a run/library
+fastqc_by_reaction("path/to/fastqc", runs)        # adds run_id, fastq_id, feature_types
+
+# See the fastq_id -> reaction map from the configs
+library_map(runs)
+```
+
 ## Customising thresholds
 
 `default_thresholds()` returns an editable tibble keyed by `library_type` and

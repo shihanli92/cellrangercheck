@@ -1,0 +1,14 @@
+##FastQC	0.12.1
+>>Basic Statistics	pass
+#Measure	Value
+Filename	GEX0_S1_L001_R1_001.fastq.gz
+File type	Conventional base calls
+Encoding	Sanger / Illumina 1.9
+Total Sequences	1e+06
+Sequences flagged as poor quality	0
+Sequence length	28
+%GC	48
+>>END_MODULE
+>>Sequence Duplication Levels	pass
+#Total Deduplicated Percentage	87.5
+>>END_MODULE

@@ -10,6 +10,7 @@ qc_report(
   ids = NULL,
   thresholds = default_thresholds(),
   include_h5 = TRUE,
+  fastqc = NULL,
   progress = interactive()
 )
 }
@@ -24,6 +25,11 @@ qc_report(
 
 \item{include_h5}{Whether to compute h5-derived metrics (barcode-rank knee,
 UMI/gene distributions). Set \code{FALSE} to skip if matrices are absent.}
+
+\item{fastqc}{Optional character vector of directories to scan for FastQC
+outputs. When supplied, a FastQC section (per-module PASS/WARN/FAIL grid and
+basic statistics, grouped by reaction) is appended. FastQC files are matched
+to reactions via each run's \code{config.csv} fastq prefixes.}
 
 \item{progress}{Whether to print timed progress messages while building the
 report. Defaults to \code{TRUE} in interactive sessions.}

@@ -89,4 +89,67 @@ write_10x_h5(
   raw[1:4, ], gex_id, gex_name, gex_type, raw_bc
 )
 
+# ---- FastQC fixtures (match the gm config fastq_ids: GEX0, SP0) ----
+fqc_root <- file.path(ext, "fastqc")
+unlink(fqc_root, recursive = TRUE)
+dir.create(fqc_root, recursive = TRUE, showWarnings = FALSE)
+
+write_fastqc <- function(root, sample_name, dedup_pct, gc, total, len,
+                         statuses, as_zip = FALSE) {
+  fq <- paste0(sample_name, ".fastq.gz")
+  base <- paste0(sample_name, "_fastqc")
+  summary_txt <- paste(
+    apply(statuses, 1, function(r) paste(r[["status"]], r[["module"]], fq,
+                                         sep = "\t")),
+    collapse = "\n")
+  data_txt <- paste(c(
+    "##FastQC\t0.12.1",
+    ">>Basic Statistics\tpass",
+    "#Measure\tValue",
+    paste0("Filename\t", fq),
+    "File type\tConventional base calls",
+    "Encoding\tSanger / Illumina 1.9",
+    paste0("Total Sequences\t", total),
+    "Sequences flagged as poor quality\t0",
+    paste0("Sequence length\t", len),
+    paste0("%GC\t", gc),
+    ">>END_MODULE",
+    ">>Sequence Duplication Levels\tpass",
+    paste0("#Total Deduplicated Percentage\t", dedup_pct),
+    ">>END_MODULE"
+  ), collapse = "\n")
+
+  if (as_zip) {
+    tmp <- file.path(tempdir(), base)
+    dir.create(tmp, showWarnings = FALSE)
+    writeLines(summary_txt, file.path(tmp, "summary.txt"))
+    writeLines(data_txt, file.path(tmp, "fastqc_data.txt"))
+    zip_path <- file.path(normalizePath(root), paste0(base, ".zip"))
+    old <- setwd(tempdir()); on.exit(setwd(old), add = TRUE)
+    utils::zip(zip_path, base, flags = "-rq")
+    unlink(tmp, recursive = TRUE)
+  } else {
+    d <- file.path(root, base)
+    dir.create(d, showWarnings = FALSE)
+    writeLines(summary_txt, file.path(d, "summary.txt"))
+    writeLines(data_txt, file.path(d, "fastqc_data.txt"))
+  }
+}
+
+gex_status <- data.frame(
+  status = c("PASS", "PASS", "WARN", "PASS", "FAIL"),
+  module = c("Basic Statistics", "Per base sequence quality",
+             "Per base sequence content", "Per sequence GC content",
+             "Overrepresented sequences"),
+  stringsAsFactors = FALSE)
+sp_status <- data.frame(
+  status = c("PASS", "WARN", "PASS", "PASS", "WARN"),
+  module = gex_status$module, stringsAsFactors = FALSE)
+
+# Extracted-dir FastQC for GEX0 (R1 + R2); zipped FastQC for SP0.
+write_fastqc(fqc_root, "GEX0_S1_L001_R1_001", 87.5, 48, 1000000, 28, gex_status)
+write_fastqc(fqc_root, "GEX0_S1_L001_R2_001", 82.1, 47, 1000000, 90, gex_status)
+write_fastqc(fqc_root, "SP0_S2_L001_R1_001", 45.0, 51, 500000, 28, sp_status,
+             as_zip = TRUE)
+
 message("Fixtures written under ", normalizePath(ext))

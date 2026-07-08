@@ -2,10 +2,13 @@
 
 export(barcode_ranks)
 export(default_thresholds)
+export(fastqc_by_reaction)
 export(flag_qc)
+export(library_map)
 export(metrics_wide)
 export(parse_cellranger)
 export(parse_cellranger_runs)
+export(parse_fastqc)
 export(qc_report)
 export(qc_status)
 export(read_cr_matrix)
