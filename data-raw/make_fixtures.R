@@ -95,13 +95,23 @@ unlink(fqc_root, recursive = TRUE)
 dir.create(fqc_root, recursive = TRUE, showWarnings = FALSE)
 
 write_fastqc <- function(root, sample_name, dedup_pct, gc, total, len,
-                         statuses, as_zip = FALSE) {
+                         statuses, as_zip = FALSE, overrep = NULL) {
   fq <- paste0(sample_name, ".fastq.gz")
   base <- paste0(sample_name, "_fastqc")
   summary_txt <- paste(
     apply(statuses, 1, function(r) paste(r[["status"]], r[["module"]], fq,
                                          sep = "\t")),
     collapse = "\n")
+  overrep_block <- c(">>Overrepresented sequences\tpass", ">>END_MODULE")
+  if (!is.null(overrep)) {
+    overrep_block <- c(
+      ">>Overrepresented sequences\tfail",
+      "#Sequence\tCount\tPercentage\tPossible Source",
+      apply(overrep, 1, function(r) paste(r[["sequence"]], r[["count"]],
+                                          r[["percentage"]], r[["source"]],
+                                          sep = "\t")),
+      ">>END_MODULE")
+  }
   data_txt <- paste(c(
     "##FastQC\t0.12.1",
     ">>Basic Statistics\tpass",
@@ -116,7 +126,8 @@ write_fastqc <- function(root, sample_name, dedup_pct, gc, total, len,
     ">>END_MODULE",
     ">>Sequence Duplication Levels\tpass",
     paste0("#Total Deduplicated Percentage\t", dedup_pct),
-    ">>END_MODULE"
+    ">>END_MODULE",
+    overrep_block
   ), collapse = "\n")
 
   if (as_zip) {
@@ -146,9 +157,18 @@ sp_status <- data.frame(
   status = c("PASS", "WARN", "PASS", "PASS", "WARN"),
   module = gex_status$module, stringsAsFactors = FALSE)
 
+overrep_tbl <- data.frame(
+  sequence = c("AAAAAAAAAAAAAAAAAAAAAAAA", "GGGGGGGGGGGGGGGGGGGGGGGG"),
+  count = c(52000, 18000),
+  percentage = c(5.2, 1.8),
+  source = c("No Hit", "No Hit"),
+  stringsAsFactors = FALSE)
+
 # Extracted-dir FastQC for GEX0 (R1 + R2); zipped FastQC for SP0.
-write_fastqc(fqc_root, "GEX0_S1_L001_R1_001", 87.5, 48, 1000000, 28, gex_status)
-write_fastqc(fqc_root, "GEX0_S1_L001_R2_001", 82.1, 47, 1000000, 90, gex_status)
+write_fastqc(fqc_root, "GEX0_S1_L001_R1_001", 87.5, 48, 1000000, 28, gex_status,
+             overrep = overrep_tbl)
+write_fastqc(fqc_root, "GEX0_S1_L001_R2_001", 82.1, 47, 1000000, 90, gex_status,
+             overrep = overrep_tbl)
 write_fastqc(fqc_root, "SP0_S2_L001_R1_001", 45.0, 51, 500000, 28, sp_status,
              as_zip = TRUE)
 

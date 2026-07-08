@@ -10,11 +10,13 @@ parse_fastqc(dirs)
 \item{dirs}{Character vector of directories to scan for FastQC outputs.}
 }
 \value{
-A list with two tibbles:
+A list with three tibbles:
 \itemize{
 \item \code{stats}: one row per FastQC file with \code{path}, \code{filename}, \code{read},
 \code{total_sequences}, \code{pct_gc}, \code{read_length}, \code{pct_dup}.
 \item \code{modules}: long form \code{path}, \code{filename}, \code{read}, \code{module}, \code{status}.
+\item \code{overrep}: overrepresented sequences (\code{sequence}, \code{count}, \code{percentage},
+\code{possible_source}, \code{filename}, \code{read}); zero rows when none are reported.
 Returns \code{NULL} if no FastQC outputs are found.
 }
 }

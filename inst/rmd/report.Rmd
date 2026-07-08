@@ -16,7 +16,7 @@ library(cellrangercheck)
 pc <- params$precomputed
 long <- pc$long; meta <- pc$meta; wide <- pc$wide
 flags <- pc$flags; status <- pc$status; br <- pc$br; dist <- pc$dist
-fqc <- pc$fqc
+fqc <- pc$fqc; mdat <- pc$mdat
 ```
 
 # Run overview
@@ -44,6 +44,27 @@ DT::datatable(status, rownames = FALSE, caption = cap, options = list(dom = "t")
 ```{r wide}
 DT::datatable(wide, rownames = FALSE,
               options = list(scrollX = TRUE, pageLength = 25))
+```
+
+# Metric explorer {.tabset}
+
+Pick a metric from the dropdown to plot it across libraries (x = GEM well). One
+tab per assay.
+
+```{r metric_explorer, results='asis'}
+if (requireNamespace("plotly", quietly = TRUE) && !is.null(mdat) && nrow(mdat)) {
+  for (a in sort(unique(mdat$library_type))) {
+    src <- c(
+      sprintf("## %s", a), "",
+      "```{r, echo=FALSE}",
+      sprintf("assay_metric_plot(mdat, %s)", deparse(a)),
+      "```", ""
+    )
+    cat(knitr::knit_child(text = src, envir = environment(), quiet = TRUE))
+  }
+} else {
+  cat("Install the 'plotly' package to enable the interactive metric explorer.\n")
+}
 ```
 
 # Flagged metrics
@@ -117,5 +138,35 @@ if (!is.null(fm) && nrow(fm)) {
          title = "FastQC module status by reaction | library | read") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r fastqc_flagged_hdr, results='asis', eval=!is.null(fqc)}
+cat("\n## Flagged modules\n\nModules that did not PASS — the detail behind the heatmap.\n")
+```
+
+```{r fastqc_flagged, eval=!is.null(fqc)}
+fm <- fqc$modules
+fl <- fm[fm$status %in% c("WARN", "FAIL"),
+         c("run_id", "fastq_id", "read", "module", "status")]
+fl <- fl[order(fl$status != "FAIL", fl$run_id, fl$fastq_id), ]
+DT::datatable(fl, rownames = FALSE, options = list(scrollX = TRUE, pageLength = 15))
+```
+
+```{r fastqc_overrep_hdr, results='asis', eval=!is.null(fqc)}
+cat("\n## Overrepresented sequences\n")
+```
+
+```{r fastqc_overrep, eval=!is.null(fqc)}
+ov <- fqc$overrep
+if (!is.null(ov) && nrow(ov)) {
+  cols <- intersect(c("run_id", "fastq_id", "read", "sequence", "count",
+                      "percentage", "possible_source"), names(ov))
+  ov <- ov[order(-ov$percentage), cols]
+  DT::datatable(ov, rownames = FALSE,
+                caption = "Overrepresented sequences reported by FastQC",
+                options = list(scrollX = TRUE, pageLength = 15))
+} else {
+  cat("No overrepresented sequences reported.")
 }
 ```

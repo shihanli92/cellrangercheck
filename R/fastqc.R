@@ -48,6 +48,33 @@ read_fastqc_member <- function(path, member) {
   readLines(con, warn = FALSE)
 }
 
+#' Extract a FastQC module's data table from fastqc_data.txt lines
+#'
+#' @param data_lines Character vector of fastqc_data.txt lines.
+#' @param module Module name, e.g. "Overrepresented sequences".
+#' @return A data.frame of the module's table, or `NULL` if absent/empty.
+#' @keywords internal
+#' @noRd
+extract_module_table <- function(data_lines, module) {
+  if (is.null(data_lines)) return(NULL)
+  starts <- grep(paste0("^>>", module, "\t"), data_lines)
+  if (length(starts) == 0) return(NULL)
+  s <- starts[1]
+  ends <- grep("^>>END_MODULE", data_lines)
+  ends <- ends[ends > s]
+  if (length(ends) == 0) return(NULL)
+  block <- data_lines[(s + 1):(ends[1] - 1)]
+  hdr <- block[grepl("^#", block)]
+  rows <- block[!grepl("^#", block) & nzchar(block)]
+  if (length(hdr) == 0 || length(rows) == 0) return(NULL)
+  cols <- strsplit(sub("^#", "", hdr[1]), "\t", fixed = TRUE)[[1]]
+  mat <- do.call(rbind, strsplit(rows, "\t", fixed = TRUE))
+  if (ncol(mat) != length(cols)) return(NULL)
+  df <- as.data.frame(mat, stringsAsFactors = FALSE)
+  names(df) <- cols
+  df
+}
+
 #' Parse a single FastQC output into module statuses and basic statistics
 #' @keywords internal
 #' @noRd
@@ -91,7 +118,21 @@ read_fastqc_one <- function(path) {
     }
   }
 
-  list(path = path, filename = filename, modules = modules, stats = stats)
+  # Overrepresented sequences detail table (present only when flagged).
+  overrep <- NULL
+  ot <- extract_module_table(data_lines, "Overrepresented sequences")
+  if (!is.null(ot)) {
+    names(ot) <- c("sequence", "count", "percentage", "possible_source")[
+      seq_len(ncol(ot))]
+    ot$count <- suppressWarnings(as.numeric(ot$count))
+    ot$percentage <- suppressWarnings(as.numeric(ot$percentage))
+    ot$path <- path
+    ot$filename <- filename
+    overrep <- tibble::as_tibble(ot)
+  }
+
+  list(path = path, filename = filename, modules = modules, stats = stats,
+       overrep = overrep)
 }
 
 #' Infer the Illumina read tag (R1/R2/I1/I2) from a fastq filename
@@ -110,10 +151,12 @@ fastqc_read_tag <- function(filename) {
 #'
 #' @param dirs Character vector of directories to scan for FastQC outputs.
 #'
-#' @return A list with two tibbles:
+#' @return A list with three tibbles:
 #'   * `stats`: one row per FastQC file with `path`, `filename`, `read`,
 #'     `total_sequences`, `pct_gc`, `read_length`, `pct_dup`.
 #'   * `modules`: long form `path`, `filename`, `read`, `module`, `status`.
+#'   * `overrep`: overrepresented sequences (`sequence`, `count`, `percentage`,
+#'     `possible_source`, `filename`, `read`); zero rows when none are reported.
 #'   Returns `NULL` if no FastQC outputs are found.
 #' @export
 parse_fastqc <- function(dirs) {
@@ -142,7 +185,11 @@ parse_fastqc <- function(dirs) {
       read = fastqc_read_tag(p$filename), .before = "module"
     )
   })
-  list(stats = stats, modules = modules)
+  overrep <- purrr::map_dfr(parsed, function(p) {
+    if (is.null(p$overrep)) return(NULL)
+    tibble::add_column(p$overrep, read = fastqc_read_tag(p$filename))
+  })
+  list(stats = stats, modules = modules, overrep = overrep)
 }
 
 #' FastQC modules that count toward the QC roll-up
@@ -249,6 +296,11 @@ fastqc_by_reaction <- function(fastqc_dirs, run_dirs, ids = NULL) {
   }
   stats <- attribute(fq$stats)
   modules <- attribute(fq$modules)
+  overrep <- if (!is.null(fq$overrep) && nrow(fq$overrep)) {
+    attribute(fq$overrep)
+  } else {
+    fq$overrep
+  }
 
   unmatched <- unique(stats$filename[is.na(stats$run_id)])
   if (length(unmatched)) {
@@ -256,5 +308,5 @@ fastqc_by_reaction <- function(fastqc_dirs, run_dirs, ids = NULL) {
             " FastQC file(s) matched no fastq_id in any config.csv (e.g. '",
             unmatched[1], "').", call. = FALSE)
   }
-  list(stats = stats, modules = modules)
+  list(stats = stats, modules = modules, overrep = overrep)
 }

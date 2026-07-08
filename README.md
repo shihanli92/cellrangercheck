@@ -60,6 +60,11 @@ qc_report(runs, "qc_report.html")
 # qc_report(runs, "qc_report.html", progress = TRUE)   # force progress off-interactive
 ```
 
+The report also includes an interactive **metric explorer** — one tab per assay,
+with a dropdown to choose which numeric metric to plot across libraries (x = GEM
+well); needs the suggested `plotly` package. Use the underlying data directly via
+`assay_metric_data(long)` and `assay_metric_plot(mdat, "Gene Expression")`.
+
 `qc_report()` prints timed, per-run progress while it works, e.g.:
 
 ```
@@ -91,6 +96,11 @@ FastQC files are matched to reactions automatically via each run's
 prefix, e.g. `GEX0`) to its GEM reaction, and FastQC outputs are named by that
 prefix. Both zipped (`*_fastqc.zip`) and already-extracted (`*_fastqc/`) outputs
 are discovered recursively.
+
+Below the status heatmap the report adds a **FastQC detail** section: a table of
+every module that did not PASS (per reaction/library/read) and the actual
+**overrepresented sequences** parsed from `fastqc_data.txt` — the extra detail
+you need to see *why* a library flagged (e.g. poly-G or adapter contamination).
 
 The FastQC result also feeds the **overall** per-reaction status: the report's
 status table gains an `overall` column = worst of the Cell Ranger metric status

@@ -12,3 +12,8 @@ Sequence length	28
 >>Sequence Duplication Levels	pass
 #Total Deduplicated Percentage	87.5
 >>END_MODULE
+>>Overrepresented sequences	fail
+#Sequence	Count	Percentage	Possible Source
+AAAAAAAAAAAAAAAAAAAAAAAA	52000	5.2	No Hit
+GGGGGGGGGGGGGGGGGGGGGGGG	18000	1.8	No Hit
+>>END_MODULE

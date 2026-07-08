@@ -88,6 +88,21 @@ test_that("fastqc_status honours the module allow-list", {
   expect_equal(nrow(fastqc_status(fr, modules = "Adapter Content")), 0)
 })
 
+test_that("overrepresented sequences are parsed and attributed", {
+  fq <- parse_fastqc(fqc_dir())
+  expect_true(!is.null(fq$overrep) && nrow(fq$overrep) > 0)
+  # GEX0 R1 + R2 fixtures each carry 2 overrepresented rows.
+  gex <- fq$overrep[grepl("^GEX0", fq$overrep$filename), ]
+  expect_equal(nrow(gex), 4)
+  top <- gex[which.max(gex$count), ]
+  expect_equal(top$count, 52000)
+  expect_equal(top$percentage, 5.2)
+
+  fr <- fastqc_by_reaction(fqc_dir(), gm_dir(), ids = "gm")
+  expect_true(all(fr$overrep$run_id == "gm"))
+  expect_true(all(fr$overrep$fastq_id == "GEX0"))
+})
+
 test_that("worst_status returns the most severe non-NA status", {
   expect_equal(worst_status("pass", "warn"), "warn")
   expect_equal(worst_status("fail", "pass"), "fail")

@@ -117,7 +117,7 @@ qc_report <- function(dirs, output_file, ids = NULL,
       precomputed = list(
         long = long, meta = meta, wide = wide,
         flags = flags, status = status, br = br_df, dist = dist,
-        fqc = fqc
+        fqc = fqc, mdat = assay_metric_data(long)
       ),
       include_h5 = include_h5
     ),
